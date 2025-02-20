@@ -26,7 +26,7 @@ impl Stock {
             ticker,
             ipo_date_time: Utc::now(),
             total_shares,
-            last_match_price: 0.0,
+            last_match_price: 10.0,
         }
     }
     pub fn display(&self) -> String {

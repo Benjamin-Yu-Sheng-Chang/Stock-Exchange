@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getCurrentWebview } from '@tauri-apps/api/webview';
 	import * as Card from '$lib/components/ui/card';
-	import { Button } from '$lib/components/ui/button';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as Table from '$lib/components/ui/table';
 	import { Input } from '$lib/components/ui/input';
 	import { invoke } from '@tauri-apps/api/core';
@@ -9,8 +9,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Label } from '$lib/components/ui/label';
 	import { EOrderSide, EOrderType, ORDER_TYPES, type Order } from '$lib/types/order';
-	import OrderPopover from '$lib/components/ui/orderPopover.svelte';
-	// import OrderPopover from '$lib/components/ui/orderPopover.svelte';
+	import OrderConfirmDialog from '$lib/components/OrderConfirmDialog.svelte';
 
 	const accountId = getCurrentWebview().label.replace('account-', '');
 
@@ -18,10 +17,10 @@
 	let selectedStock = $state<Stock | null>(null);
 	let quantity = $state(1);
 	let orderTypeIndex = $state<number>(0);
-	let isPopoverOpen = $state(false);
 	let side = $state<EOrderSide>(EOrderSide.Buy);
 	let orderType = $state<EOrderType>(EOrderType.Market);
 	let price = $state(0);
+	let showConfirmDialog = $state(false);
 
 	let order = $derived<Order>(
 		selectedStock
@@ -55,6 +54,15 @@
 
 	function selectStock(stock: Stock) {
 		selectedStock = stock;
+	}
+
+	function handleOrderSubmit() {
+		// Here you'll add the logic to submit the order
+		showConfirmDialog = false;
+	}
+
+	function handleOrderCancel() {
+		showConfirmDialog = false;
 	}
 </script>
 
@@ -150,14 +158,38 @@
 								</Select.Content>
 							</Select.Root>
 						</div>
-
-						<!-- Keep the OrderPopovers outside the Select -->
-						<OrderPopover {order} side={EOrderSide.Buy} onSubmitOrder={() => {}} />
-						<OrderPopover {order} side={EOrderSide.Sell} onSubmitOrder={() => {}} />
-						<!-- <OrderPopover /> -->
+						<div class="flex flex-col gap-2 w-full">
+							<Label>Side</Label>
+							<div class="flex gap-2 w-full items-center justify-center">
+								<Button
+									class="bg-green-500 hover:bg-green-300 text-white w-full"
+									variant="outline"
+									onclick={() => {
+										side = EOrderSide.Buy;
+										showConfirmDialog = true;
+									}}>Buy</Button
+								>
+								<Button
+									class="bg-red-500 hover:bg-red-300 text-white w-full"
+									variant="outline"
+									onclick={() => {
+										side = EOrderSide.Sell;
+										showConfirmDialog = true;
+									}}>Sell</Button
+								>
+							</div>
+						</div>
 					</Card.Content>
 				</Card.Root>
 			</div>
 		</div>
 	</div>
 </div>
+
+<OrderConfirmDialog
+	bind:open={showConfirmDialog}
+	{order}
+	orderType={ORDER_TYPES[orderTypeIndex]}
+	onConfirm={handleOrderSubmit}
+	onCancel={handleOrderCancel}
+/>

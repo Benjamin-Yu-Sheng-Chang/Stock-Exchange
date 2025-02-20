@@ -5,6 +5,7 @@ bun.lockb
 # cargo
 src-tauri/Cargo.lock
 
+
 # Output
 .output
 .vercel
@@ -27,3 +28,4 @@ vite.config.ts.timestamp-*
 
 # Tauri
 /src-tauri/target
+bun.lockb
