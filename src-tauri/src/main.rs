@@ -10,6 +10,9 @@ use objects::stock::{Stock, Ticker};
 mod command;
 use command::account::{create_account, frontend::create_account_window};
 use command::stock::create_stock;
+
+mod server;
+use server::redis_order::RedisOrder;
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())

@@ -2,8 +2,10 @@ use crate::objects::account::*;
 use crate::objects::exchange::*;
 use crate::objects::stock::*;
 use chrono::{DateTime, Utc};
+use getset::{CopyGetters, Getters, Setters};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
+#[derive(Serialize, Deserialize, Copy, Clone)]
 pub enum OrderType {
     Market,
     Limit,
@@ -33,7 +35,7 @@ impl OrderType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 pub enum OrderStatus {
     Pending,
     Received,
@@ -57,22 +59,30 @@ impl OrderStatus {
 #[derive(Debug)]
 pub enum OrderError {
     InsufficientBalance,
+    InsufficientShares,
     InvalidExpiration,
     InvalidVolume,
+    StockNotFound,
+    RedisError(String),
 }
 
 pub enum DBOrderError {}
 
+#[derive(Serialize, Deserialize, Copy, Clone)]
 pub enum OrderSide {
     Buy,
     Sell,
 }
 
+#[derive(Getters, Setters, CopyGetters)]
+#[getset(get_copy = "pub")]
 pub struct Order<'a> {
     id: Uuid, // uuid v7
     account_id: Uuid,
     side: OrderSide,
+    #[getset(skip)]
     stock: Stock,
+    #[getset(skip)]
     exchange: &'a Exchange,
     price: f64,
     volume: u64,
@@ -81,6 +91,7 @@ pub struct Order<'a> {
     expiration: DateTime<Utc>,
     shares_filled: u64,
     status: OrderStatus,
+    #[getset(skip)]
     processed_log: Vec<OrderLog>,
 }
 
@@ -144,28 +155,13 @@ impl<'a> Order<'a> {
     pub fn update_processed_log(&mut self, log: OrderLog) {
         self.processed_log.push(log);
     }
-    pub fn get_id(&self) -> Uuid {
-        self.id
-    }
-    pub fn get_stock(&self) -> Stock {
-        self.stock.clone()
+    pub fn get_stock(&self) -> &Stock {
+        &self.stock
     }
     pub fn get_exchange(&self) -> &Exchange {
         &self.exchange
     }
-    pub fn get_price(&self) -> f64 {
-        self.price
-    }
-    pub fn get_volume(&self) -> u64 {
-        self.volume
-    }
-    pub fn get_order_type(&self) -> OrderType {
-        self.order_type.clone()
-    }
-    pub fn get_time(&self) -> DateTime<Utc> {
-        self.time
-    }
-    pub fn get_expiration(&self) -> DateTime<Utc> {
-        self.expiration
+    pub fn get_processed_log(&self) -> &Vec<OrderLog> {
+        &self.processed_log
     }
 }

@@ -19,6 +19,7 @@ export enum EOrderType {
 	IOC,
 	GTC
 }
+
 export enum EOrderSide {
 	Buy = 1,
 	Sell = -1

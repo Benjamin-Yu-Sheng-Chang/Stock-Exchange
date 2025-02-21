@@ -30,3 +30,4 @@ vite.config.ts.timestamp-*
 /src-tauri/target
 bun.lockb
 *.lockb
+src-tauri/Cargo.lock

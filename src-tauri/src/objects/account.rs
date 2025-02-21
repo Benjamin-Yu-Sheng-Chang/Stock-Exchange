@@ -1,6 +1,9 @@
 use std::default;
 
-use super::order::*;
+use super::{
+    order::*,
+    stock::{OccupiedStock, Ticker},
+};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
@@ -11,6 +14,7 @@ pub struct Account<'a> {
     pub balance: u64,
     pub occupied_balance: u64,
     pub created_at: DateTime<Utc>,
+    pub owned_stocks: Vec<OccupiedStock>,
     current_orders: Vec<Order<'a>>,
 }
 
@@ -23,6 +27,7 @@ impl<'a> Account<'a> {
             occupied_balance: 0,
             current_orders: Vec::new(),
             created_at: Utc::now(),
+            owned_stocks: Vec::new(),
         }
     }
     pub fn new(name: String, balance: u64) -> Self {
@@ -37,36 +42,48 @@ impl<'a> Account<'a> {
         format!("account: {}\n balance: {}", self.name, self.balance)
     }
 
-    fn ask(&mut self, order: &mut Order) -> Result<OrderStatus, OrderError> {
-        if order.get_price() * (order.get_volume() as f64)
-            > (self.balance - self.occupied_balance) as f64
-        {
+    async fn ask(&mut self, mut order: Order<'a>) -> Result<OrderStatus, OrderError> {
+        if order.price() * (order.volume() as f64) > (self.balance - self.occupied_balance) as f64 {
             return Err(OrderError::InsufficientBalance);
         }
-        if order.get_expiration() < Utc::now() {
+        if order.expiration() < Utc::now() {
             return Err(OrderError::InvalidExpiration);
         }
-        if order.get_volume() < 0 {
+        if order.volume() < 0 {
             return Err(OrderError::InvalidVolume);
         }
-        let status = order.get_exchange().receive(&*order);
+        let status = order.get_exchange().receive(&order).await?;
+        order.update_status(status.clone());
         match status {
-            Ok(status) => {
-                order.update_status(status.clone());
-                Ok(status)
+            OrderStatus::Received => {
+                self.occupied_balance += order.volume();
+                self.current_orders.push(order);
             }
-            Err(e) => Err(e),
+            _ => {}
         }
+        Ok(status)
     }
 
-    fn bid(&mut self, mut order: Order) -> Result<OrderStatus, OrderError> {
-        let status = order.get_exchange().receive(&order);
-        match status {
-            Ok(status) => {
-                order.update_status(status.clone());
-                Ok(status)
-            }
-            Err(e) => Err(e),
+    async fn bid(&mut self, mut order: Order<'a>) -> Result<OrderStatus, OrderError> {
+        let occupied_stock = self
+            .owned_stocks
+            .iter_mut()
+            .find(|occupied_stock| occupied_stock.stock.ticker.eq(&order.get_stock().ticker))
+            .ok_or(OrderError::StockNotFound)?;
+
+        if order.volume() > occupied_stock.quantity - occupied_stock.occupied_quantity {
+            return Err(OrderError::InsufficientShares);
         }
+
+        let status = order.get_exchange().receive(&order).await?;
+        order.update_status(status.clone());
+        match status {
+            OrderStatus::Received => {
+                occupied_stock.occupied_quantity += order.volume();
+                self.current_orders.push(order);
+            }
+            _ => {}
+        }
+        Ok(status)
     }
 }

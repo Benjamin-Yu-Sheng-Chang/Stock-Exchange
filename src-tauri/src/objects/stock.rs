@@ -8,10 +8,22 @@ pub struct Stock {
     pub last_match_price: f64,
 }
 
+pub struct OccupiedStock {
+    pub stock: Stock,
+    pub quantity: u64,
+    pub occupied_quantity: u64,
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Ticker {
     pub symbol: String,
     pub exchange: String,
+}
+
+impl PartialEq for Ticker {
+    fn eq(&self, other: &Self) -> bool {
+        self.symbol == other.symbol && self.exchange == other.exchange
+    }
 }
 
 impl Ticker {
