@@ -12,8 +12,26 @@ use command::account::{create_account, frontend::create_account_window};
 use command::stock::create_stock;
 
 mod server;
+use server::neondb::init_neondb;
+use server::redis::init_redis;
 use server::redis_order::RedisOrder;
-fn main() {
+
+#[tokio::main]
+async fn main() {
+    let neon_init_result = init_neondb().await;
+    if neon_init_result.is_err() {
+        println!("NeonDB initialization failed");
+        return;
+    }
+    println!("NeonDB initialized");
+
+    let redis_init_result = init_redis().await;
+    if redis_init_result.is_err() {
+        println!("Redis initialization failed");
+        return;
+    }
+    println!("Redis initialized");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
@@ -23,18 +41,4 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-    // let account = Account::new("John Doe".to_string(), 1000);
-    // let exchange = Exchange::new("NASDAQ".to_string());
-    // let stock = Stock::new(Ticker::new("AAPL".to_string(), "NASDAQ".to_string()), 100);
-    // let order = Order::new(
-    //     stock,
-    //     account.get_id(),
-    //     OrderSide::Buy,
-    //     &exchange,
-    //     100.0,
-    //     100,
-    //     OrderType::Market,
-    // );
-    // let status = exchange.receive(&order);
-    // dbg!(status);
 }

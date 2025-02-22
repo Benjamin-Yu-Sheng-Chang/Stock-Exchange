@@ -21,3 +21,6 @@ tokio-postgres = { version ="0.7.13", features = ["with-uuid-1"] }
 uuid = { version = "1.13.1", features = ["v4", "v7", "js",] }
 chrono = { version = "0.4.39", features = ["serde"] }
 getset = "0.1.4"
+postgres-openssl = "0.5.1"
+openssl = "0.10.71"
+dotenv = "0.15.0"

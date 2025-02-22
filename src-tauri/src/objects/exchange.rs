@@ -12,13 +12,12 @@ pub struct Exchange {
 }
 
 impl Exchange {
-    pub async fn new(name: String, redis_url: String) -> Result<Self, RedisError> {
-        let client = redis::Client::open(redis_url)?;
-        Ok(Self {
+    pub fn new(name: String, redis_client: Arc<Mutex<redis::Client>>) -> Self {
+        Self {
             name,
             stocks: Vec::new(),
-            redis_client: Arc::new(Mutex::new(client)),
-        })
+            redis_client,
+        }
     }
     pub fn display(&self) -> String {
         format!("{}", self.name)
@@ -33,7 +32,7 @@ impl Exchange {
             .await
             .get_multiplexed_async_connection()
             .await
-            .map_err(|e| OrderError::RedisError(e.to_string()))?; // Explicit error type
+            .map_err(|e| OrderError::RedisError(e.to_string()))?;
 
         let order_key = format!(
             "orderbook:{}:{}",
@@ -47,15 +46,16 @@ impl Exchange {
         let redis_order = RedisOrder::into(order);
         let score = order.time().timestamp_millis();
 
-        conn.zadd(&order_key.as_str(), &order.id().to_string().as_str(), score)
+        let _: () = conn
+            .zadd(&order_key, order.id().to_string(), score)
             .await
             .map_err(|e| OrderError::RedisError(e.to_string()))?;
 
         let order_key = format!("order:{}", order.id());
         let order_json = serde_json::to_string(&redis_order)
             .map_err(|e| OrderError::RedisError(e.to_string()))?;
-
-        conn.hset(order_key, "data", order_json)
+        let _: () = conn
+            .hset(order_key, "data", order_json)
             .await
             .map_err(|e| OrderError::RedisError(e.to_string()))?;
 
