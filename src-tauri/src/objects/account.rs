@@ -42,7 +42,11 @@ impl<'a> Account<'a> {
         format!("account: {}\n balance: {}", self.name, self.balance)
     }
 
-    async fn ask(&mut self, mut order: Order<'a>) -> Result<OrderStatus, OrderError> {
+    async fn ask(
+        &mut self,
+        mut order: Order<'a>,
+        redis_client: &redis::Client,
+    ) -> Result<OrderStatus, OrderError> {
         if order.price() * (order.volume() as f64) > (self.balance - self.occupied_balance) as f64 {
             return Err(OrderError::InsufficientBalance);
         }
@@ -52,7 +56,7 @@ impl<'a> Account<'a> {
         if order.volume() < 0 {
             return Err(OrderError::InvalidVolume);
         }
-        let status = order.get_exchange().receive(&order).await?;
+        let status = order.get_exchange().receive(&order, &redis_client).await?;
         order.update_status(status.clone());
         match status {
             OrderStatus::Received => {
@@ -64,7 +68,11 @@ impl<'a> Account<'a> {
         Ok(status)
     }
 
-    async fn bid(&mut self, mut order: Order<'a>) -> Result<OrderStatus, OrderError> {
+    async fn bid(
+        &mut self,
+        mut order: Order<'a>,
+        redis_client: &redis::Client,
+    ) -> Result<OrderStatus, OrderError> {
         let occupied_stock = self
             .owned_stocks
             .iter_mut()
@@ -75,7 +83,7 @@ impl<'a> Account<'a> {
             return Err(OrderError::InsufficientShares);
         }
 
-        let status = order.get_exchange().receive(&order).await?;
+        let status = order.get_exchange().receive(&order, &redis_client).await?;
         order.update_status(status.clone());
         match status {
             OrderStatus::Received => {

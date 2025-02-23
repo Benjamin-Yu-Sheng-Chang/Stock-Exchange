@@ -1,6 +1,7 @@
 use crate::objects::response::StockResponse;
 use chrono::{DateTime, Utc};
 
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Stock {
     pub ticker: Ticker,
     pub ipo_date_time: DateTime<Utc>,

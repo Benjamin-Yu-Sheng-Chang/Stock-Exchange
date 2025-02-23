@@ -22,6 +22,8 @@ chrono = { version = "0.4.39", features = ["serde"] }
 getset = "0.1.4"
 dotenv = "0.15.0"
 surrealdb = { version = "2.2.1" }
+lazy_static = "1.5.0"
+once_cell = "1.20.3"
 
 [dev-dependencies]
-tokio = { version = "1.43.0", features = ["full", "test-util"] }
+tokio = { version = "1.43.0", features = ["full", "test-util", "sync"] }
