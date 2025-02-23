@@ -1,4 +1,13 @@
 services:
+  surrealdb:
+    image: surrealdb/surrealdb:latest-dev
+    restart: unless-stopped
+    ports:
+      - '8000:8000'
+    volumes:
+      - surrealdb_data:/data
+    command: ['start', '--user', 'root', '--pass', 'root', 'rocksdb:/data/mydatabase.db']
+
   redis:
     image: redis:latest
     container_name: redis
@@ -11,4 +20,6 @@ services:
 
 volumes:
   redis_data:
+    driver: local
+  surrealdb_data:
     driver: local
